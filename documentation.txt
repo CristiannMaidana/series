@@ -1,0 +1,616 @@
+# Guía Técnica Breve: Consumo de API en Astro
+
+## 1. Introducción
+
+Este proyecto usa una capa de servicios para conectarse con la API pública de TVMaze desde Astro. La idea principal es separar la lógica de conexión de la lógica de presentación, para que las páginas y componentes solo se encarguen de mostrar datos.
+
+Centralizar la URL base en un único archivo evita repetir direcciones en varias partes del proyecto. Si la API cambia, el ajuste se hace en un solo lugar.
+
+Las páginas deben usar funciones de `src/services` y no hacer `fetch` directo cuando ya existe un servicio, porque eso mantiene el código más ordenado, reutilizable y consistente. Además, así se aprovecha el mismo manejo de errores y timeout en toda la aplicación.
+
+## 2. Estructura del proyecto
+
+```text
+src/
+├── components/
+│   ├── ShowApiExactJson.astro
+│   └── ShowApiTextList.astro
+├── pages/
+│   └── index.astro
+└── services/
+    ├── api.ts
+    └── shows.ts
+```
+
+### `src/services/api.ts`
+
+Contiene la configuración base de conexión con la API:
+
+- Define la URL base.
+- Define el timeout.
+- Expone `apiFetch(path)`, una función genérica para hacer solicitudes y manejar errores básicos.
+
+### `src/services/shows.ts`
+
+Contiene servicios específicos del recurso de series:
+
+- `getSeries()`
+- `getSerieById(id)`
+
+También define las interfaces TypeScript que describen la estructura de datos de una serie.
+
+### `src/pages/index.astro`
+
+Es la página principal actual. Importa componentes de ejemplo para mostrar cómo consumir los servicios sin repetir lógica de conexión.
+
+### Componentes de ejemplo
+
+#### `src/components/ShowApiTextList.astro`
+
+Ejemplo simple que obtiene una serie por ID y muestra sus campos como lista de texto.
+
+#### `src/components/ShowApiExactJson.astro`
+
+Ejemplo más detallado que accede a propiedades simples, arreglos y objetos anidados de la respuesta.
+
+## 3. Configuración de la conexión
+
+### URL base
+
+La API base del proyecto es:
+
+```txt
+https://api.tvmaze.com
+```
+
+### Cómo funciona `apiFetch()`
+
+La función `apiFetch(path)` está en `src/services/api.ts` y hace lo siguiente:
+
+1. Construye la URL final uniendo la base con el `path`.
+2. Ejecuta `fetch(...)`.
+3. Aplica un timeout de `5000 ms`.
+4. Verifica si la respuesta fue correcta con `response.ok`.
+5. Devuelve `response.json()` si todo salió bien.
+6. Lanza un error si la respuesta falla o si el tiempo se agota.
+
+Código actual:
+
+```ts
+const API_BASE_URL = 'https://api.tvmaze.com';
+const API_TIMEOUT_MS = 5000;
+
+export async function apiFetch(path: string) {
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      signal: AbortSignal.timeout(API_TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    if (error instanceof Error && error.name === 'TimeoutError') {
+      throw new Error(`API timeout after ${API_TIMEOUT_MS}ms`);
+    }
+
+    if (error instanceof Error) {
+      throw new Error(`API request failed: ${error.message}`);
+    }
+
+    throw new Error('API request failed');
+  }
+}
+```
+
+### Manejo básico de errores y timeout
+
+- Si la API responde con un estado no exitoso, se genera un error.
+- Si la solicitud tarda más de `5000 ms`, se lanza un error de timeout.
+- Si ocurre otro problema de red o ejecución, también se informa con un mensaje uniforme.
+
+Ejemplos de mensajes posibles:
+
+```txt
+API timeout after 5000ms
+API request failed: API error: 404
+API request failed: fetch failed
+```
+
+## 4. Servicios disponibles
+
+### `getSeries()`
+
+### Qué hace
+
+Obtiene el listado de series desde el endpoint `/shows`.
+
+### Parámetros
+
+No recibe parámetros.
+
+### Qué devuelve
+
+Devuelve una promesa con un arreglo de series:
+
+```ts
+Promise<Show[]>
+```
+
+### Ejemplo de uso
+
+```astro
+---
+import { getSeries } from '../services/shows';
+
+const shows = await getSeries();
+---
+
+<ul>
+  {shows.slice(0, 10).map((show) => (
+    <li>{show.name}</li>
+  ))}
+</ul>
+```
+
+### `getSerieById(id)`
+
+### Qué hace
+
+Obtiene una serie específica desde el endpoint `/shows/:id`.
+
+### Parámetros
+
+Recibe un ID en formato string:
+
+```ts
+id: string
+```
+
+### Qué devuelve
+
+Devuelve una promesa con una serie:
+
+```ts
+Promise<Show>
+```
+
+### Ejemplo de uso
+
+```astro
+---
+import { getSerieById } from '../services/shows';
+
+const show = await getSerieById('1');
+---
+
+<h1>{show.name}</h1>
+<p>Idioma: {show.language}</p>
+<p>Estado: {show.status}</p>
+```
+
+## 5. Estructura de datos de la API
+
+### Ejemplo realista de JSON de una serie
+
+```json
+{
+  "id": 1,
+  "url": "https://www.tvmaze.com/shows/1/under-the-dome",
+  "name": "Under the Dome",
+  "type": "Scripted",
+  "language": "English",
+  "genres": ["Drama", "Science-Fiction", "Thriller"],
+  "status": "Ended",
+  "runtime": 60,
+  "averageRuntime": 60,
+  "premiered": "2013-06-24",
+  "ended": "2015-09-10",
+  "officialSite": "http://www.cbs.com/shows/under-the-dome/",
+  "schedule": {
+    "time": "22:00",
+    "days": ["Thursday"]
+  },
+  "rating": {
+    "average": 6.5
+  },
+  "network": {
+    "id": 2,
+    "name": "CBS",
+    "country": {
+      "name": "United States",
+      "code": "US",
+      "timezone": "America/New_York"
+    },
+    "officialSite": "https://www.cbs.com/"
+  },
+  "webChannel": null,
+  "image": {
+    "medium": "https://static.tvmaze.com/uploads/images/medium_portrait/81/202627.jpg",
+    "original": "https://static.tvmaze.com/uploads/images/original_untouched/81/202627.jpg"
+  },
+  "summary": "<p><b>Under the Dome</b> cuenta la historia de un pequeño pueblo atrapado bajo una cúpula misteriosa.</p>",
+  "_links": {
+    "self": {
+      "href": "https://api.tvmaze.com/shows/1"
+    },
+    "previousepisode": {
+      "href": "https://api.tvmaze.com/episodes/185054",
+      "name": "The Enemy Within"
+    }
+  }
+}
+```
+
+### Campos principales
+
+#### `id`
+
+Identificador numérico único de la serie.
+
+#### `name`
+
+Nombre de la serie.
+
+#### `type`
+
+Tipo de producción. Puede venir en `null`.
+
+#### `language`
+
+Idioma principal. Puede venir en `null`.
+
+#### `genres`
+
+Arreglo de géneros. Puede venir vacío.
+
+#### `status`
+
+Estado de la serie, por ejemplo `Running` o `Ended`. Puede venir en `null`.
+
+#### `runtime`
+
+Duración habitual de un episodio en minutos. Puede venir en `null`.
+
+#### `averageRuntime`
+
+Promedio de duración de episodios. Puede venir en `null`.
+
+#### `premiered`
+
+Fecha de estreno. Puede venir en `null`.
+
+#### `ended`
+
+Fecha de finalización. Puede venir en `null`.
+
+#### `officialSite`
+
+Sitio oficial de la serie. Puede venir en `null`.
+
+#### `schedule`
+
+Objeto con horario y días de emisión:
+
+```json
+{
+  "time": "22:00",
+  "days": ["Thursday"]
+}
+```
+
+#### `rating`
+
+Objeto con el promedio de valoración:
+
+```json
+{
+  "average": 6.5
+}
+```
+
+`rating.average` puede venir en `null`.
+
+#### `network`
+
+Canal o cadena principal de emisión. Puede venir en `null`.
+
+#### `webChannel`
+
+Plataforma o canal web. Puede venir en `null`.
+
+#### `image`
+
+Objeto con URLs de imagen:
+
+```json
+{
+  "medium": "https://...",
+  "original": "https://..."
+}
+```
+
+Puede venir en `null`.
+
+#### `summary`
+
+Resumen de la serie. Puede venir en `null` y suele incluir HTML.
+
+#### `_links`
+
+Objeto con enlaces relacionados de la API, por ejemplo `self` y `previousepisode`.
+
+### Campos que pueden venir en `null`
+
+Según las interfaces actuales del proyecto, pueden venir en `null`:
+
+- `type`
+- `language`
+- `status`
+- `runtime`
+- `averageRuntime`
+- `premiered`
+- `ended`
+- `officialSite`
+- `rating.average`
+- `network`
+- `webChannel`
+- `dvdCountry`
+- `image`
+- `summary`
+- `network.country`
+- `network.officialSite`
+
+## 6. Ejemplos de uso en Astro
+
+### Importar un servicio en una página `.astro`
+
+```astro
+---
+import { getSeries, getSerieById, type Show } from '../services/shows';
+---
+```
+
+### Obtener datos
+
+```astro
+---
+import { getSeries } from '../services/shows';
+
+const shows = await getSeries();
+---
+```
+
+```astro
+---
+import { getSerieById } from '../services/shows';
+
+const show = await getSerieById('1');
+---
+```
+
+### Recorrer listas con `map`
+
+```astro
+---
+import { getSeries } from '../services/shows';
+
+const shows = await getSeries();
+---
+
+<ul>
+  {shows.slice(0, 5).map((show) => (
+    <li>{show.name}</li>
+  ))}
+</ul>
+```
+
+### Acceder a propiedades simples
+
+```astro
+<h2>{show.name}</h2>
+<p>{show.language}</p>
+<p>{show.status}</p>
+```
+
+### Acceder a arreglos
+
+```astro
+<p>Géneros: {show.genres.join(', ')}</p>
+```
+
+```astro
+<ul>
+  {show.genres.map((genre) => (
+    <li>{genre}</li>
+  ))}
+</ul>
+```
+
+### Acceder a objetos anidados
+
+```astro
+<p>Horario: {show.schedule.time}</p>
+<p>Días: {show.schedule.days.join(', ')}</p>
+<p>Canal: {show.network?.name ?? 'Sin canal'}</p>
+<p>País: {show.network?.country?.name ?? 'Sin país'}</p>
+<p>Rating: {show.rating.average ?? 'Sin rating'}</p>
+```
+
+### Ejemplo simple y fácil de copiar
+
+```astro
+---
+import { getSerieById, type Show } from '../services/shows';
+
+let show: Show | null = null;
+let errorMessage = '';
+
+try {
+  show = await getSerieById('1');
+} catch (error) {
+  errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+}
+---
+
+{errorMessage ? (
+  <p>Error: {errorMessage}</p>
+) : show ? (
+  <>
+    <h1>{show.name}</h1>
+    <p>Idioma: {show.language ?? 'Sin dato'}</p>
+    <p>Géneros: {show.genres.join(', ')}</p>
+    <p>Canal: {show.network?.name ?? 'Sin canal'}</p>
+  </>
+) : (
+  <p>No se encontraron datos.</p>
+)}
+```
+
+## 7. Manejo de estados especiales
+
+### Si la API devuelve un arreglo vacío
+
+Esto puede pasar si en el futuro se usa un endpoint que no tenga resultados o si se aplica algún filtro.
+
+```astro
+---
+import { getSeries } from '../services/shows';
+
+const shows = await getSeries();
+---
+
+{shows.length === 0 ? (
+  <p>No hay series para mostrar.</p>
+) : (
+  <ul>
+    {shows.map((show) => (
+      <li>{show.name}</li>
+    ))}
+  </ul>
+)}
+```
+
+### Si la API falla
+
+Siempre conviene usar `try/catch` al llamar un servicio.
+
+```astro
+---
+import { getSeries, type Show } from '../services/shows';
+
+let shows: Show[] = [];
+let errorMessage = '';
+
+try {
+  shows = await getSeries();
+} catch (error) {
+  errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+}
+---
+
+{errorMessage ? (
+  <p>Error al cargar datos: {errorMessage}</p>
+) : (
+  <ul>
+    {shows.map((show) => (
+      <li>{show.name}</li>
+    ))}
+  </ul>
+)}
+```
+
+### Si un registro no existe
+
+Si el ID no existe, la API responderá con error y el servicio lo propagará al `catch`.
+
+```astro
+---
+import { getSerieById, type Show } from '../services/shows';
+
+let show: Show | null = null;
+let errorMessage = '';
+
+try {
+  show = await getSerieById('999999');
+} catch (error) {
+  errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+}
+---
+
+{errorMessage ? (
+  <p>La serie no existe o no pudo cargarse.</p>
+) : show ? (
+  <h1>{show.name}</h1>
+) : (
+  <p>Sin datos.</p>
+)}
+```
+
+## 8. Guía rápida para el equipo
+
+### Qué funciones deben usar
+
+Para trabajar con series, usar estas funciones:
+
+- `getSeries()`
+- `getSerieById(id)`
+
+### Qué archivos no deberían modificar
+
+Si el objetivo es solo construir páginas o componentes, no deberían modificar:
+
+- `src/services/api.ts`
+- `src/services/shows.ts`
+
+Solo tendría sentido cambiarlos si se necesita agregar un nuevo endpoint, mejorar el manejo de datos o extender la capa de servicios.
+
+### Cómo crear una nueva página que consuma datos
+
+1. Crear la página en `src/pages/`.
+2. Importar la función del servicio necesaria.
+3. Obtener los datos en el bloque superior de Astro.
+4. Manejar errores con `try/catch`.
+5. Renderizar el contenido con condicionales simples.
+
+Ejemplo:
+
+```astro
+---
+import { getSeries, type Show } from '../services/shows';
+
+let shows: Show[] = [];
+let errorMessage = '';
+
+try {
+  shows = await getSeries();
+} catch (error) {
+  errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+}
+---
+
+<h1>Series</h1>
+
+{errorMessage ? (
+  <p>{errorMessage}</p>
+) : (
+  <ul>
+    {shows.slice(0, 10).map((show) => (
+      <li>{show.name}</li>
+    ))}
+  </ul>
+)}
+```
+
+### Buenas prácticas para no duplicar `fetch`
+
+- Si ya existe un servicio, reutilizarlo.
+- No escribir URLs de la API directamente en páginas o componentes.
+- No repetir lógica de timeout o manejo de errores fuera de `services`.
+- Si hace falta un nuevo endpoint, agregar una nueva función en `src/services/shows.ts` o en otro archivo de servicios.
+
+## 9. Conclusión
+
+La capa de servicios permite consumir la API de TVMaze de forma ordenada, reutilizable y más fácil de mantener. Para el trabajo del equipo, la regla práctica es simple: las páginas muestran datos y los servicios se encargan de obtenerlos. Si una consulta ya existe en `src/services`, debe reutilizarse en lugar de volver a implementar el `fetch`.
