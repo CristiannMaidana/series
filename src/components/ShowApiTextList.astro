@@ -1,0 +1,86 @@
+---
+import { getSerieById } from '../services/shows';
+
+const { id = '1' } = Astro.props;
+let show = null;
+let errorMessage = '';
+
+try {
+  show = await getSerieById(id);
+} catch (error) {
+  errorMessage = error instanceof Error ? error.message : 'Unknown error';
+}
+
+const formatValue = (value: unknown): string => {
+  if (value === null || value === undefined) {
+    return 'null';
+  }
+
+  if (Array.isArray(value)) {
+    return value.length ? value.join(', ') : '[]';
+  }
+
+  return String(value);
+};
+
+const stripHtml = (value: string | null): string => {
+  if (!value) {
+    return 'null';
+  }
+
+  return value.replace(/<[^>]+>/g, '').trim();
+};
+
+const items = show
+  ? [
+      ['id', formatValue(show.id)],
+      ['url', formatValue(show.url)],
+      ['name', formatValue(show.name)],
+      ['type', formatValue(show.type)],
+      ['language', formatValue(show.language)],
+      ['genres', formatValue(show.genres)],
+      ['status', formatValue(show.status)],
+      ['runtime', formatValue(show.runtime)],
+      ['averageRuntime', formatValue(show.averageRuntime)],
+      ['premiered', formatValue(show.premiered)],
+      ['ended', formatValue(show.ended)],
+      ['officialSite', formatValue(show.officialSite)],
+      ['schedule.time', formatValue(show.schedule.time)],
+      ['schedule.days', formatValue(show.schedule.days)],
+      ['rating.average', formatValue(show.rating.average)],
+      ['weight', formatValue(show.weight)],
+      ['network.id', formatValue(show.network?.id)],
+      ['network.name', formatValue(show.network?.name)],
+      ['network.country.name', formatValue(show.network?.country?.name)],
+      ['network.country.code', formatValue(show.network?.country?.code)],
+      ['network.country.timezone', formatValue(show.network?.country?.timezone)],
+      ['network.officialSite', formatValue(show.network?.officialSite)],
+      ['webChannel', formatValue(show.webChannel)],
+      ['dvdCountry', formatValue(show.dvdCountry)],
+      ['externals.tvrage', formatValue(show.externals.tvrage)],
+      ['externals.thetvdb', formatValue(show.externals.thetvdb)],
+      ['externals.imdb', formatValue(show.externals.imdb)],
+      ['image.medium', formatValue(show.image?.medium)],
+      ['image.original', formatValue(show.image?.original)],
+      ['summary', stripHtml(show.summary)],
+      ['updated', formatValue(show.updated)],
+      ['_links.self.href', formatValue(show._links.self?.href)],
+      ['_links.previousepisode.href', formatValue(show._links.previousepisode?.href)],
+      ['_links.previousepisode.name', formatValue(show._links.previousepisode?.name)],
+    ]
+  : [];
+---
+
+{
+  errorMessage ? (
+    <pre>{JSON.stringify({ error: errorMessage }, null, 2)}</pre>
+  ) : (
+    <ul>
+      {
+        items.map(([label, value]) => (
+          <li>{label}: {value}</li>
+        ))
+      }
+    </ul>
+  )
+}
