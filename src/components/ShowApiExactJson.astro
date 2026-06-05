@@ -1,0 +1,118 @@
+---
+import { getSerieById, type Show } from '../services/shows';
+
+interface Props {
+  id?: string;
+}
+
+const { id = '1' } = Astro.props as Props;
+let show: Show | null = null;
+let errorMessage = '';
+
+try {
+  show = await getSerieById(id);
+} catch (error) {
+  errorMessage = error instanceof Error ? error.message : 'Unknown error';
+}
+
+const stripHtml = (value: string | null): string => {
+  if (!value) {
+    return 'null';
+  }
+
+  return value.replace(/<[^>]+>/g, '').trim();
+};
+---
+
+{
+  errorMessage || !show ? (
+    <p>Load failed: {errorMessage || 'No data'}</p>
+  ) : (
+    <>
+      <p>id: {show.id}</p>
+      <p>url: {show.url}</p>
+      <p>name: {show.name}</p>
+      <p>type: {show.type}</p>
+      <p>language: {show.language}</p>
+
+      <div>
+        <p>genres:</p>
+        <ul>
+          {show.genres.map((genre) => (
+            <li><p>{genre}</p></li>
+          ))}
+        </ul>
+      </div>
+
+      <p>status: {show.status}</p>
+      <p>runtime: {show.runtime}</p>
+      <p>averageRuntime: {show.averageRuntime}</p>
+      <p>premiered: {show.premiered}</p>
+      <p>ended: {show.ended}</p>
+      <p>officialSite: {show.officialSite}</p>
+
+      <div>
+        <p>schedule:</p>
+        <p>time: {show.schedule.time}</p>
+        <p>days:</p>
+        <ul>
+          {show.schedule.days.map((day) => (
+            <li><p>{day}</p></li>
+          ))}
+        </ul>
+      </div>
+
+      <div>
+        <p>rating:</p>
+        <p>average: {show.rating.average}</p>
+      </div>
+
+      <p>weight: {show.weight}</p>
+
+      <div>
+        <p>network:</p>
+        <p>id: {show.network?.id ?? 'null'}</p>
+        <p>name: {show.network?.name ?? 'null'}</p>
+        <p>country name: {show.network?.country?.name ?? 'null'}</p>
+        <p>country code: {show.network?.country?.code ?? 'null'}</p>
+        <p>country timezone: {show.network?.country?.timezone ?? 'null'}</p>
+        <p>officialSite: {show.network?.officialSite ?? 'null'}</p>
+      </div>
+
+      <div>
+        <p>webChannel:</p>
+        <p>{show.webChannel ? JSON.stringify(show.webChannel) : 'null'}</p>
+      </div>
+
+      <div>
+        <p>dvdCountry:</p>
+        <p>{show.dvdCountry ? JSON.stringify(show.dvdCountry) : 'null'}</p>
+      </div>
+
+      <div>
+        <p>externals:</p>
+        <p>tvrage: {show.externals.tvrage ?? 'null'}</p>
+        <p>thetvdb: {show.externals.thetvdb ?? 'null'}</p>
+        <p>imdb: {show.externals.imdb ?? 'null'}</p>
+      </div>
+
+      <div>
+        <p>image:</p>
+        <p>medium: {show.image?.medium ?? 'null'}</p>
+        {show.image?.medium && <img src={show.image.medium} alt={`${show.name} medium`} />}
+        <p>original: {show.image?.original ?? 'null'}</p>
+        {show.image?.original && <img src={show.image.original} alt={`${show.name} original`} />}
+      </div>
+
+      <p>summary: {stripHtml(show.summary)}</p>
+      <p>updated: {show.updated}</p>
+
+      <div>
+        <p>_links:</p>
+        <p>self href: {show._links.self?.href ?? 'null'}</p>
+        <p>previousepisode href: {show._links.previousepisode?.href ?? 'null'}</p>
+        <p>previousepisode name: {show._links.previousepisode?.name ?? 'null'}</p>
+      </div>
+    </>
+  )
+}
