@@ -1,0 +1,52 @@
+---
+interface Props {
+  currentPage: number;
+  totalPages: number;
+}
+
+const { currentPage, totalPages } = Astro.props as Props;
+---
+
+<nav class="pagination">
+  {currentPage > 1 && (
+    <a href={`/?page=${currentPage - 1}`}>Anterior</a>
+  )}
+
+  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+    <a
+      href={`/?page=${page}`}
+      class={page === currentPage ? 'active' : ''}
+    >
+      {page}
+    </a>
+  ))}
+
+  {currentPage < totalPages && (
+    <a href={`/?page=${currentPage + 1}`}>Siguiente</a>
+  )}
+</nav>
+
+<style>
+  .pagination {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: center;
+    margin-top: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .pagination a {
+    padding: 0.5rem 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    text-decoration: none;
+    background: white;
+    color: black;
+  }
+
+  .pagination a.active {
+    background: #38bdf8;
+    color: white;
+    border-color: #38bdf8;
+  }
+</style>
