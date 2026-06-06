@@ -1,0 +1,75 @@
+---
+interface Show {
+  id: number;
+  name: string;
+  image?: {
+    medium?: string;
+  };
+  genres: string[];
+  rating?: {
+    average?: number | null;
+  };
+}
+
+const { show } = Astro.props as { show: Show };
+---
+
+<article class="show-card">
+  {show.image?.medium && (
+    <img src={show.image.medium} alt={show.name} />
+  )}
+
+  <h2>{show.name}</h2>
+
+  <p>Géneros: {show.genres.join(', ')}</p>
+  <p>Rating: {show.rating?.average ?? 'Sin rating'}</p>
+
+  <div class="genres">
+    {show.genres.map((genre) => (
+      <span>{genre}</span>
+    ))}
+  </div>
+
+  <a href={`/shows/${show.id}`}>Ver detalle</a>
+</article>
+
+<style>
+  .show-card {
+    border: 1px solid #ccc;
+    border-radius: 10px;
+    padding: 1rem;
+    background: white;
+    color: black;
+  }
+
+  .show-card img {
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+  }
+
+  .show-card h2 {
+    margin-bottom: 0.5rem;
+  }
+
+  .genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 1rem 0;
+  }
+
+  .genres span {
+    background: #eee;
+    padding: 0.3rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+  }
+
+  .show-card a {
+    display: inline-block;
+    margin-top: 0.5rem;
+    text-decoration: none;
+    font-weight: bold;
+  }
+</style>

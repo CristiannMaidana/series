@@ -1,11 +1,73 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import ShowCard from '../components/ShowCard.astro';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const shows = [
+  {
+    id: 1,
+    name: 'Breaking Bad',
+    image: { medium: 'https://static.tvmaze.com/uploads/images/medium_portrait/0/2400.jpg' },
+    genres: ['Drama', 'Crime'],
+    rating: { average: 9.2 }
+  },
+  {
+    id: 2,
+    name: 'Dark',
+    image: { medium: 'https://static.tvmaze.com/uploads/images/medium_portrait/188/470319.jpg' },
+    genres: ['Sci-Fi', 'Thriller'],
+    rating: { average: 8.7 }
+  },
+  {
+    id: 3,
+    name: 'Stranger Things',
+    image: { medium: 'https://static.tvmaze.com/uploads/images/medium_portrait/200/501942.jpg' },
+    genres: ['Drama', 'Fantasy'],
+    rating: { average: 8.5 }
+  },
+  {
+    id: 4,
+    name: 'The Office',
+    image: { medium: 'https://static.tvmaze.com/uploads/images/medium_portrait/481/1204342.jpg' },
+    genres: ['Comedy'],
+    rating: { average: 8.9 }
+  },
+  {
+    id: 5,
+    name: 'Sherlock',
+    image: { medium: 'https://static.tvmaze.com/uploads/images/medium_portrait/82/207417.jpg' },
+    genres: ['Crime', 'Drama'],
+    rating: { average: 9.0 }
+  },
+  {
+    id: 6,
+    name: 'Friends',
+    image: { medium: 'https://static.tvmaze.com/uploads/images/medium_portrait/41/104550.jpg' },
+    genres: ['Comedy', 'Romance'],
+    rating: { average: 8.8 }
+  }
+];
+
 ---
 
-<Layout>
-	<Welcome />
+
+<Layout title="Inicio">
+  <section>
+    <h1>Series y Programas de TV</h1>
+    <p>Explorador de series.</p>
+  </section>
+
+  <section class= "shows-grid">
+    {shows.map((show) => (
+      <ShowCard show={show} />
+    ))}
+	</section>
 </Layout>
+
+<style>
+	.shows-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+</style>
