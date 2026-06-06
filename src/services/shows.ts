@@ -61,3 +61,11 @@ export function getSeries(): Promise<Show[]> {
 export function getSerieById(id: string): Promise<Show> {
   return apiFetch(`/shows/${id}`);
 }
+
+export function getElencoById(id: string): Promise<any[]> {
+  return apiFetch(`/shows/${id}/cast`);
+}
+
+export function getEpisodiosById(id: string): Promise<any[]> {
+  return apiFetch(`/shows/${id}/episodes`);
+}
