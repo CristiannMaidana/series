@@ -1,102 +1,103 @@
 ---
-// 1. ZONA DE JAVASCRIPT (La lógica)
-// Aquí "abrimos la caja" de Astro.props y sacamos las tres variables
-// que nos enviará la página principal.
+import {
+  getElencoById,
+  getEpisodiosById,
+  getSerieById,
+  type CastMember,
+  type Episode,
+  type Show,
+} from '../services/shows';
 
 interface Props {
-  titulo: string;
-  imagen: string;
-  resumen: string;
-  lenguaje: string;
-  estado: string;
-  generos: string[]; // ¡Esta es la magia que quita el error de 'any'!
-
-  rating: number;
-  elenco: any[];
-  episodios: {
-    name: string;
-    runtime: number;
-  }[];
+  id?: string;
 }
 
-const {
-  titulo,
-  imagen,
-  resumen,
-  elenco,
-  rating,
-  generos,
-  lenguaje,
-  estado,
+const { id } = Astro.props as Props;
 
-  episodios,
-} = Astro.props as Props;
+let show: Show | null = null;
+let elenco: CastMember[] = [];
+let episodios: Episode[] = [];
+let errorMessage = '';
+
+try {
+  if (!id) {
+    throw new Error('Missing id');
+  }
+
+  [show, elenco, episodios] = await Promise.all([
+    getSerieById(id),
+    getElencoById(id),
+    getEpisodiosById(id),
+  ]);
+} catch (error) {
+  errorMessage = error instanceof Error ? error.message : 'Unknown error';
+}
+
+const titulo = show?.name ?? 'Sin titulo';
+const imagen = show?.image?.medium ?? 'https://via.placeholder.com/210x295?text=Sin+Imagen';
+const resumen = show?.summary ?? 'Sin resumen disponible.';
+const lenguaje = show?.language ?? 'Desconocido';
+const estado = show?.status ?? 'Desconocido';
+const generos = show?.genres ?? [];
+const rating = show?.rating?.average ?? 'N/A';
 ---
 
-<!-- 2. ZONA DE HTML (La vista) -->
-<div class="info-serie">
-  <!-- Imprimimos el título usando las llaves mágicas {} de Astro -->
-  <h2>{titulo}</h2>
+{
+  errorMessage ? (
+    <p>Error: {errorMessage}</p>
+  ) : show ? (
+    <>
+      <div class="info-serie">
+        <h2>{titulo}</h2>
 
-  <!-- Mostramos la imagen. 
-       Añadimos '||' por si acaso la API no envía imagen, 
-       así mostramos una imagen genérica de reemplazo. -->
-  <img
-    src={imagen || "https://via.placeholder.com/210x295?text=Sin+Imagen"}
-    alt={`Póster de ${titulo}`}
-  /><!-- metodo a apsar en link-->
+        <img src={imagen} alt={`Poster de ${titulo}`} />
 
-  <p>Idioma: {lenguaje}</p>
-  <p>Estado: {estado}</p>
-  <div class="lista-generos">
-    {generos.map((genero) => <span class="etiqueta-genero">{genero}</span>)}
-  </div>
+        <p>Idioma: {lenguaje}</p>
+        <p>Estado: {estado}</p>
 
-  <p>Rating: {rating || "N/A"}</p>
+        <div class="lista-generos">
+          {generos.map((genero) => <span class="etiqueta-genero">{genero}</span>)}
+        </div>
 
-  <!-- TVMaze envía el resumen con etiquetas HTML incluidas (como <p> o <b>). 
-       Usamos set:html para que el navegador dibuje esos párrafos 
-       en lugar de mostrar el código plano. -->
-  <article set:html={resumen} />
-</div>
+        <p>Rating: {rating}</p>
 
-<h3>Elenco</h3>
-<ul class="elenco">
-  {
-    elenco.map((actor) => (
-      <li>
-        <strong>{actor.person.name}</strong> como {actor.character.name}
-      </li>
-    ))
-  }
-</ul>
-<ul class="episodios">
-  {
-    episodios.map((episodio) => (
-      <li>
-        <strong>{episodio.name}</strong> - Duración: {episodio.runtime} minutos
-      </li>
-    ))
-  }
-</ul>
+        <article set:html={resumen} />
+      </div>
 
-<!-- 3. ZONA DE CSS (Los estilos) -->
+      <h3>Elenco</h3>
+      <ul class="elenco">
+        {elenco.map((actor) => (
+          <li>
+            <strong>{actor.person.name}</strong> como {actor.character.name}
+          </li>
+        ))}
+      </ul>
+
+      <h3>Episodios</h3>
+      <ul class="episodios">
+        {episodios.map((episodio) => (
+          <li>
+            <strong>{episodio.name}</strong> - Duracion: {episodio.runtime ?? 'N/A'} minutos
+          </li>
+        ))}
+      </ul>
+    </>
+  ) : (
+    <p>No data</p>
+  )
+}
+
 <style>
-  /* Estos estilos están "encapsulados", es decir,  */
-  /* solo afectarán a este componente en particular  */
-  <style>
-    /* Contenedor principal */
-    .info-serie {
+  .info-serie {
     display: flex;
     flex-direction: column;
     align-items: center;
     text-align: center;
-    max-width: 800px; /* Evita que se estire demasiado en PC */
-    margin: 0 auto 2rem auto; /* Lo centra en la pantalla */
-    font-family: system-ui, sans-serif; /* Letra más moderna */
+    max-width: 800px;
+    margin: 0 auto 2rem auto;
+    font-family: system-ui, sans-serif;
   }
 
-  /* Imagen principal */
   img {
     border-radius: 12px;
     box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
@@ -104,7 +105,6 @@ const {
     max-width: 100%;
   }
 
-  /* Píldoras de géneros */
   .lista-generos {
     display: flex;
     gap: 0.8rem;
@@ -112,6 +112,7 @@ const {
     flex-wrap: wrap;
     justify-content: center;
   }
+
   .etiqueta-genero {
     background-color: #333;
     color: white;
@@ -121,19 +122,20 @@ const {
     font-weight: bold;
   }
 
-  /* Estilos para las listas de elenco y episodios */
   h3 {
     text-align: center;
     color: #444;
     margin-top: 2rem;
   }
+
   ul.elenco,
   ul.episodios {
-    list-style: none; /* Quita los puntos negros feos */
+    list-style: none;
     padding: 0;
     max-width: 600px;
     margin: 0 auto 2rem auto;
   }
+
   ul.elenco li,
   ul.episodios li {
     background: #f9f9f9;
