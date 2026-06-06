@@ -1,28 +1,8 @@
 ---
 import InfoSerie from "../../components/InfoSerie.astro";
 import Layout from "../../layouts/Layout.astro";
-import {
-  getSerieById,
-  getElencoById,
-  getEpisodiosById,
-} from "../../services/shows";
 
 const { id } = Astro.params;
-
-let show = null;
-let elenco = [];
-let episodios = [];
-let errorMessage = "";
-
-try {
-  if (id) {
-    show = await getSerieById(id);
-    elenco = await getElencoById(id);
-    episodios = await getEpisodiosById(id);
-  }
-} catch (error) {
-  errorMessage = error instanceof Error ? error.message : "Error desconocido";
-}
 
 export async function getStaticPaths() {
   return [
@@ -34,26 +14,5 @@ export async function getStaticPaths() {
 ---
 
 <Layout>
-  {
-    errorMessage ? (
-      <p>Error: {errorMessage}</p>
-    ) : show ? (
-      <InfoSerie
-        titulo={show.name}
-        imagen={
-          show.image?.medium ||
-          "https://via.placeholder.com/210x295?text=Sin+Imagen"
-        }
-        resumen={show.summary || "Sin resumen disponible."}
-        rating={show.rating?.average || 0}
-        generos={show.genres}
-        lenguaje={show.language || "Desconocido"}
-        estado={show.status || "Desconocido"}
-        elenco={elenco}
-        episodios={episodios}
-      />
-    ) : (
-      <p>Cargando...</p>
-    )
-  }
+  <InfoSerie id={id} />
 </Layout>
