@@ -23,6 +23,27 @@ export interface ShowLink {
   name?: string;
 }
 
+export interface CastPerson {
+  id: number;
+  name: string;
+}
+
+export interface CastCharacter {
+  id: number;
+  name: string;
+}
+
+export interface CastMember {
+  person: CastPerson;
+  character: CastCharacter;
+}
+
+export interface Episode {
+  id: number;
+  name: string;
+  runtime: number | null;
+}
+
 export interface Show {
   id: number;
   url: string;
@@ -62,10 +83,10 @@ export function getSerieById(id: string): Promise<Show> {
   return apiFetch(`/shows/${id}`);
 }
 
-export function getElencoById(id: string): Promise<any[]> {
+export function getElencoById(id: string): Promise<CastMember[]> {
   return apiFetch(`/shows/${id}/cast`);
 }
 
-export function getEpisodiosById(id: string): Promise<any[]> {
+export function getEpisodiosById(id: string): Promise<Episode[]> {
   return apiFetch(`/shows/${id}/episodes`);
 }
