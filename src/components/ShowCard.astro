@@ -1,17 +1,7 @@
 ---
-interface Show {
-  id: number;
-  name: string;
-  premiered: string | null;
-  status: string | null;
-  image?: {
-    medium?: string;
-  };
-  genres: string[];
-  rating?: {
-    average?: number | null;
-  };
-}
+import LikeButton from "./LikeButton.jsx";
+import type { Show } from "../services/shows";
+
 
 const { show } = Astro.props as { show: Show };
 const year = show.premiered ? show.premiered.slice(0, 4) : '—';
@@ -28,8 +18,15 @@ const year = show.premiered ? show.premiered.slice(0, 4) : '—';
     <span class="rating-badge">★ {show.rating.average}</span>
     )}
   </div>
+
+
   <div class="card-content">
-    <h2>{show.name}</h2>
+    <div class="title-row">
+      <h2>{show.name}</h2>
+      <!--client: load carga el botón de "Me gusta" solo en el cliente, isla interactiva (hidratación)-->
+      <LikeButton client:load showId={show.id} />
+    </div>
+  
 
     <div class="meta">
       <span>{year}</span>
@@ -74,6 +71,18 @@ const year = show.premiered ? show.premiered.slice(0, 4) : '—';
     gap: 0.75rem;
     flex: 1;
   }
+  .title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .title-row h2 {
+    margin: 0;
+    flex: 1;
+  }
+
   .show-card h2 {
     font-size: 1.1rem;
     margin: 0;

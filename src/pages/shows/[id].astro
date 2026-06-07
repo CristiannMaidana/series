@@ -1,15 +1,16 @@
 ---
 import InfoSerie from "../../components/InfoSerie.astro";
 import Layout from "../../layouts/Layout.astro";
+import { getSeries } from "../../services/shows";
 
 const { id } = Astro.params;
 
 export async function getStaticPaths() {
-  return [
-    { params: { id: "1" } },
-    { params: { id: "82" } },
-    { params: { id: "431" } },
-  ];
+  const shows = await getSeries();
+
+  return shows.map((show) => ({
+    params: { id: String(show.id) },
+  }));
 }
 ---
 
