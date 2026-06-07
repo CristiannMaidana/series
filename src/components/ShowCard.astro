@@ -1,4 +1,5 @@
 ---
+import LikeButton from "./LikeButton.jsx";
 interface Show {
   id: number;
   name: string;
@@ -15,19 +16,20 @@ const { show } = Astro.props as { show: Show };
 ---
 
 <article class="show-card">
-  {show.image?.medium && (
-    <img src={show.image.medium} alt={show.name} />
-  )}
+  {show.image?.medium && <img src={show.image.medium} alt={show.name} />}
 
-  <h2>{show.name}</h2>
+  <div class="title-row">
+    <h2>{show.name}</h2>
 
-  <p>Géneros: {show.genres.join(', ')}</p>
-  <p>Rating: {show.rating?.average ?? 'Sin rating'}</p>
+    <!--client: load carga el botón de "Me gusta" solo en el cliente, isla interactiva (hidratación)-->
+    <LikeButton client:load showId={show.id} />
+  </div>
+
+  <p>Géneros: {show.genres.join(", ")}</p>
+  <p>Rating: {show.rating?.average ?? "Sin rating"}</p>
 
   <div class="genres">
-    {show.genres.map((genre) => (
-      <span>{genre}</span>
-    ))}
+    {show.genres.map((genre) => <span>{genre}</span>)}
   </div>
 
   <a href={`/shows/${show.id}`}>Ver detalle</a>
@@ -46,6 +48,15 @@ const { show } = Astro.props as { show: Show };
     width: 100%;
     border-radius: 8px;
     margin-bottom: 1rem;
+  }
+  .title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .title-row h2 {
+    margin: 0;
   }
 
   .show-card h2 {
