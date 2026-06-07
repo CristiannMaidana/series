@@ -27,9 +27,9 @@ const totalPages = Math.ceil(shows.length / itemsPerPage);
 
 
 <Layout title="Inicio">
-  <section>
-    <h1>Series y Programas de TV</h1>
-    <p>Explorador de series.</p>
+  <section class="hero">
+    <p class="hero-kicker">EXPLORADOR DE SERIES</p>
+    <h1>DESCUBRÍ TU PRÓXIMA SERIE</h1>
   </section>
 
   {
@@ -54,6 +54,27 @@ const totalPages = Math.ceil(shows.length / itemsPerPage);
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 1rem;
-    margin-top: 2rem;
+    margin-top: 1.4rem;
+  }
+  .hero{
+    padding: 1.2rem 0 0.8rem;
+  }
+  .hero-kicker {
+    font-size: 0.68rem;
+    color: #b84b63;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    margin-bottom: 0.65rem;
+    text-transform: uppercase;
+  }
+  .hero h1 {
+    font-size: clamp(1.9rem, 4.8vw, 3.6rem);
+    line-height: 0.95;
+    margin: 0;
+    color: #f8fafc;
+    max-width: 560px;
+    font-weight: 850;
+    text-transform: uppercase;
+    margin-bottom: 1.25rem;
   }
 </style>
