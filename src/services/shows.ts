@@ -42,6 +42,8 @@ export interface Episode {
   id: number;
   name: string;
   runtime: number | null;
+  season: number;
+  number: number | null;
 }
 
 export interface Show {
